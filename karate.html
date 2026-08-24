@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Strategico: Difetti - Ingegnerizzazione dell'Identità</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&family=Noto+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!--
+Palette: Vibrant Terra & Vino (Cream #F2EFEA, Wine Red #A33E49, Earth Brown #5A3E36, Vibrant Crimson #E11D48, Amber #D97706)
+Confirmation: NEITHER Mermaid JS NOR SVG were used anywhere in the output.
+Narrative Plan:
+1. Hook/Intro: The "Difetti" philosophy and the HoReCa market gap in Irpinia.
+2. Market Comparison: Analyzing the "Industrial vs Artisanal" value perception (Radar Chart).
+3. Product Matrix: Margin vs Volume analysis for the core products (Plotly WebGL Bubble).
+4. Operating Brain: The AppSheet CRM workflow to eliminate paper (HTML/CSS Flowchart).
+5. Financial Outlook: ROI, Break-even, and Client Retention projections (Chart.js Bar/Line).
+Visualization Choices:
+- Market Reality -> Compare -> Radar Chart -> Chart.js (Effectively plots multivariate comparisons on a canvas).
+- Product Matrix -> Relationships -> scattergl -> Plotly.js (WebGL rendering for complex multivariable scatter data, avoiding SVG rendering for data points).
+- Operating Brain -> Organize -> Flow Chart -> HTML/CSS Grid (Clearly shows step-by-step CRM process, strictly adhering to NO Mermaid/NO SVG rules).
+- Financial Outlook -> Change -> Bar/Line Combo -> Chart.js (Perfect for showing temporal revenue trends and break-even thresholds on canvas).
+-->
+<style>
+    body { font-family: 'Noto Sans', sans-serif; background-color: #F2EFEA; color: #5A3E36; }
+    h1, h2, h3, h4 { font-family: 'Noto Serif', serif; color: #A33E49; }
+    .chart-container { position: relative; width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; height: 40vh; max-height: 400px; }
+    @media (min-width: 768px) { .chart-container { height: 350px; } }
+    .material-card { background-color: #ffffff; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; margin-bottom: 1.5rem; transition: box-shadow 0.3s ease; }
+    .material-card:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    .btn-primary { background-color: #A33E49; color: #ffffff; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: background-color 0.3s ease; }
+    .btn-primary:hover { background-color: #E11D48; }
+</style>
+</head>
+<body class="antialiased">
+
+<nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#A33E49]/20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+            <div class="flex-shrink-0 flex items-center gap-2">
+                <span class="text-3xl font-bold text-[#A33E49] tracking-tighter">DIFETTI</span>
+                <span class="hidden md:block text-sm font-semibold text-[#5A3E36] border-l-2 border-[#D97706] pl-2">Executive Report</span>
+            </div>
+            <div class="text-sm font-semibold text-[#5A3E36]">Albertaccio ADV</div>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <header class="text-center mb-16">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 uppercase tracking-wide">L'Ingegnerizzazione del Successo</h1>
+        <p class="text-xl md:text-2xl font-light max-w-3xl mx-auto">Da distributore analogico ad Autorità del Gusto in Irpinia. Il piano esecutivo per scalare il brand attraverso la "Trasparenza Bruta".</p>
+    </header>
+
+    <section class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 border-b-4 border-[#D97706] inline-block pb-2">1. Il Meccanismo Unico: L'Inversione della Prova</h2>
+        <p class="text-lg mb-8 leading-relaxed">
+            Il mercato dell'HoReCa è saturo di prodotti fotocopia. I competitor industriali vendono una perfezione estetica ottenuta tramite chimica e standardizzazione. La strategia per <strong>Difetti</strong> si basa sulla provocazione: <em>"Quando difetti non è mancanza ma unicità"</em>. Certifichiamo l'imperfezione (il bordo irregolare, il colore non uniforme) come l'unica prova scientifica della lavorazione artigianale, giustificando un posizionamento premium.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="material-card text-center flex flex-col justify-center items-center bg-[#A33E49] text-white">
+                <span class="text-5xl font-bold mb-2">50-60%</span>
+                <span class="text-lg font-semibold uppercase tracking-wider">Margine Target</span>
+                <p class="text-sm mt-2 opacity-90">Sostenibile grazie al valore percepito del "Difetto Certificato".</p>
+            </div>
+            <div class="material-card text-center flex flex-col justify-center items-center border-t-4 border-[#D97706]">
+                <span class="text-5xl font-bold mb-2 text-[#D97706]">&#x26A0;</span>
+                <span class="text-lg font-semibold uppercase tracking-wider text-[#5A3E36]">Zero Foglietti</span>
+                <p class="text-sm mt-2 text-[#5A3E36]">Transizione totale al CRM digitale AppSheet per eliminare errori operativi.</p>
+            </div>
+            <div class="material-card text-center flex flex-col justify-center items-center border-t-4 border-[#E11D48]">
+                <span class="text-5xl font-bold mb-2 text-[#E11D48]">&#x23F1;</span>
+                <span class="text-lg font-semibold uppercase tracking-wider text-[#5A3E36]">15 Minuti</span>
+                <p class="text-sm mt-2 text-[#5A3E36]">Il tempo massimo strategico per il ricontatto dei lead generati dalla Landing Page.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <div>
+            <h2 class="text-3xl font-bold mb-6 border-b-4 border-[#A33E49] inline-block pb-2">2. Il Paradosso del Mercato HoReCa</h2>
+            <p class="text-lg mb-4 leading-relaxed">
+                L'analisi condotta su oltre 40 realtà locali evidenzia un gap strutturale: aziende che fatturano milioni possiedono identità digitali amatoriali. Il ristoratore medio (35-45 anni) è stanco delle forniture standardizzate, ma non ha alternative visibili.
+            </p>
+            <p class="text-lg mb-4 leading-relaxed">
+                Il grafico radar a fianco dimostra il divario di percezione tra un distributore classico e il posizionamento di <strong>Difetti</strong>. Mentre l'industria vince sulla <em>shelf-life</em>, noi dominiamo sull'esperienza gustativa e sull'impatto emotivo, leve fondamentali per la fidelizzazione del cliente finale.
+            </p>
+        </div>
+        <div class="material-card">
+            <h3 class="text-xl font-bold text-center mb-4">Percezione del Valore: Industriale vs Difetti</h3>
+            <div class="chart-container">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 border-b-4 border-[#D97706] inline-block pb-2">3. Matrice Strategica dei Prodotti</h2>
+        <p class="text-lg mb-8 leading-relaxed">
+            Per ottimizzare gli sforzi di marketing e le campagne Ads, abbiamo segmentato il catalogo prodotti. L'analisi incrocia il Volume di Vendita potenziale, il Margine Operativo e l'Indice di "Difetto" (quanto la storia artigianale incide sulla vendita). I prodotti nel quadrante in alto a destra sono i nostri "Ganci di Acquisizione".
+        </p>
+        <div class="material-card">
+            <div id="plotlyScatter" class="w-full h-[500px]"></div>
+        </div>
+    </section>
+
+    <section class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 border-b-4 border-[#A33E49] inline-block pb-2">4. Il "Cervello": Infrastruttura AppSheet</h2>
+        <p class="text-lg mb-8 leading-relaxed">
+            Sostituiamo la manualità analogica con un'ingegneria di processo spietata. Il gestionale custom non è un semplice magazzino, ma uno strumento di <strong>Intelligence di Vendita</strong> basato sulla PNL, progettato per l'utilizzo su tablet direttamente al tavolo del ristoratore.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white border border-[#A33E49]/20 rounded-lg p-6 relative shadow-sm text-center">
+                <div class="w-12 h-12 bg-[#A33E49] text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4 z-10 relative">1</div>
+                <h4 class="font-bold text-[#5A3E36] mb-2">Profilazione PNL</h4>
+                <p class="text-sm opacity-80">Check pre-visita. Antonio analizza se il ristoratore è Visivo, Auditivo o Cinestesico dallo storico CRM.</p>
+                <div class="hidden md:block absolute top-1/2 -right-4 w-8 border-t-2 border-dashed border-[#A33E49]"></div>
+            </div>
+            <div class="bg-white border border-[#A33E49]/20 rounded-lg p-6 relative shadow-sm text-center">
+                <div class="w-12 h-12 bg-[#D97706] text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4 z-10 relative">2</div>
+                <h4 class="font-bold text-[#5A3E36] mb-2">Ordine su Tablet</h4>
+                <p class="text-sm opacity-80">Selezione rapida dei prodotti. Il cliente appone la firma digitale direttamente sullo schermo.</p>
+                <div class="hidden md:block absolute top-1/2 -right-4 w-8 border-t-2 border-dashed border-[#D97706]"></div>
+            </div>
+            <div class="bg-white border border-[#A33E49]/20 rounded-lg p-6 relative shadow-sm text-center">
+                <div class="w-12 h-12 bg-[#E11D48] text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4 z-10 relative">3</div>
+                <h4 class="font-bold text-[#5A3E36] mb-2">Automazione PDF</h4>
+                <p class="text-sm opacity-80">Il sistema genera un PDF brandizzato "Difetti" e lo invia istantaneamente su WhatsApp al cliente.</p>
+                <div class="hidden md:block absolute top-1/2 -right-4 w-8 border-t-2 border-dashed border-[#E11D48]"></div>
+            </div>
+            <div class="bg-white border border-[#A33E49]/20 rounded-lg p-6 relative shadow-sm text-center">
+                <div class="w-12 h-12 bg-[#5A3E36] text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4 z-10 relative">4</div>
+                <h4 class="font-bold text-[#5A3E36] mb-2">Gestione Predittiva</h4>
+                <p class="text-sm opacity-80">Lo scarico aggiorna il magazzino in cloud. Alert cromatici segnalano ad Antonio la necessità di riordino.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <div class="material-card order-2 lg:order-1">
+            <h3 class="text-xl font-bold text-center mb-4">Proiezione Finanziaria e Break-Even</h3>
+            <div class="chart-container">
+                <canvas id="comboChart"></canvas>
+            </div>
+        </div>
+        <div class="order-1 lg:order-2">
+            <h2 class="text-3xl font-bold mb-6 border-b-4 border-[#A33E49] inline-block pb-2">5. Piano Finanziario & Scaling</h2>
+            <p class="text-lg mb-4 leading-relaxed">
+                Il pacchetto "Partner Hybrid" di Albertaccio ADV richiede un investimento mensile di <strong>€233,00</strong> (Infrastruttura Gestionale + Gestione Marketing). La matematica del business è spietata a nostro favore.
+            </p>
+            <p class="text-lg mb-4 leading-relaxed">
+                Considerando i margini elevati, il <strong>Punto di Pareggio (Break-Even)</strong> viene raggiunto con l'acquisizione di soli <strong>2 nuovi clienti B2B al mese</strong>. Il grafico illustra la proiezione a 6 mesi: mentre i costi dell'infrastruttura rimangono fissi, il fatturato generato dal nurturing WhatsApp e dall'acquisizione tramite la nuova Landing Page innesca una crescita esponenziale dei profitti netti.
+            </p>
+            <div class="mt-8">
+                <button class="btn-primary inline-flex items-center gap-2">
+                    <span>&#x2713;</span> Approva Piano Esecutivo
+                </button>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="bg-[#5A3E36] text-[#F2EFEA] py-8 text-center mt-12">
+    <p class="text-sm opacity-80 uppercase tracking-widest font-semibold">Albertaccio ADV &copy; 2026 - Lead Strategist Division</p>
+    <p class="text-xs mt-2 opacity-60">"Perché quando difetti non è mancanza, ma l'inizio di un impero."</p>
+</footer>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+        const brandColors = {
+            red: '#A33E49',
+            brown: '#5A3E36',
+            cream: '#F2EFEA',
+            amber: '#D97706',
+            crimson: '#E11D48',
+            gray: '#d1d5db'
+        };
+
+        const chartOptionsBase = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { family: "'Noto Sans', sans-serif" } } },
+                tooltip: {
+                    backgroundColor: 'rgba(90, 62, 54, 0.9)',
+                    titleFont: { family: "'Noto Serif', serif", size: 14 },
+                    bodyFont: { family: "'Noto Sans', sans-serif", size: 13 },
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            const item = tooltipItems[0];
+                            let label = item.chart.data.labels[item.dataIndex];
+                            if (Array.isArray(label)) {
+                                return label.join(' ');
+                            } else {
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        const ctxRadar = document.getElementById('radarChart').getContext('2d');
+        const radarLabels = [
+            ['Perfezione', 'Estetica'], 
+            ['Esperienza', 'Gustativa'], 
+            ['Shelf-life', '(Conservanti)'], 
+            ['Impatto', 'Emotivo'], 
+            ['Margine', 'di Profitto']
+        ];
+        new Chart(ctxRadar, {
+            type: 'radar',
+            data: {
+                labels: radarLabels,
+                datasets: [
+                    {
+                        label: 'Fornitura Industriale',
+                        data: [90, 40, 95, 30, 45],
+                        backgroundColor: 'rgba(209, 213, 219, 0.4)',
+                        borderColor: brandColors.gray,
+                        pointBackgroundColor: brandColors.gray,
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Difetti Certificati',
+                        data: [40, 95, 40, 90, 85],
+                        backgroundColor: 'rgba(163, 62, 73, 0.4)',
+                        borderColor: brandColors.red,
+                        pointBackgroundColor: brandColors.red,
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                ...chartOptionsBase,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(90, 62, 54, 0.1)' },
+                        grid: { color: 'rgba(90, 62, 54, 0.1)' },
+                        pointLabels: { font: { family: "'Noto Sans', sans-serif", size: 12 }, color: brandColors.brown },
+                        ticks: { display: false, max: 100, min: 0 }
+                    }
+                }
+            }
+        });
+
+        const ctxCombo = document.getElementById('comboChart').getContext('2d');
+        const comboLabels = ['Mese 1', 'Mese 2', 'Mese 3', 'Mese 4', 'Mese 5', 'Mese 6'];
+        new Chart(ctxCombo, {
+            type: 'bar',
+            data: {
+                labels: comboLabels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Costo Infrastruttura Fissa (€)',
+                        data: [233, 233, 233, 233, 233, 233],
+                        borderColor: brandColors.gray,
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0
+                    },
+                    {
+                        type: 'line',
+                        label: 'Nuovi Clienti B2B (Target)',
+                        data: [1, 3, 5, 8, 12, 15],
+                        borderColor: brandColors.crimson,
+                        backgroundColor: brandColors.crimson,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Profitto Stimato Extra (€)',
+                        data: [-100, 250, 800, 1800, 3200, 4500],
+                        backgroundColor: brandColors.amber,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                ...chartOptionsBase,
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { 
+                        type: 'linear', 
+                        display: true, 
+                        position: 'left',
+                        title: { display: true, text: 'Valore Economico (€)', color: brandColors.brown },
+                        grid: { color: 'rgba(90, 62, 54, 0.1)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'N. Clienti Acquisiti', color: brandColors.crimson },
+                        grid: { drawOnChartArea: false },
+                        min: 0
+                    }
+                }
+            }
+        });
+
+        const plotlyData = [
+            {
+                x: [80, 150, 250, 60, 120, 200, 300, 180],
+                y: [40, 50, 60, 35, 55, 65, 58, 45],
+                text: [
+                    'Sottoli (Verdure)', 'Taralli (Nonno Peppe)', 'Crostate (Forno Locale)', 
+                    'Pasta (Trafilata)', 'Alici (Nettuno)', 'Nocciola (Noccioro)', 
+                    'Gin (Sintony)', 'Salumi (Sopresseda)'
+                ],
+                mode: 'markers+text',
+                type: 'scattergl',
+                marker: {
+                    size: [20, 35, 45, 25, 30, 40, 25, 35], 
+                    color: [brandColors.amber, brandColors.brown, brandColors.red, brandColors.amber, brandColors.crimson, brandColors.brown, brandColors.gray, brandColors.red],
+                    opacity: 0.8,
+                    line: { width: 1, color: '#ffffff' }
+                },
+                textposition: 'top center',
+                textfont: { family: "'Noto Sans', sans-serif", size: 11, color: brandColors.brown }
+            }
+        ];
+
+        const plotlyLayout = {
+            title: { text: 'Performance Catalogo: Valore vs Margine', font: { family: "'Noto Serif', serif", size: 18, color: brandColors.red } },
+            xaxis: { title: 'Scontrino Medio Stimato (€)', gridcolor: 'rgba(90, 62, 54, 0.1)', zerolinecolor: 'rgba(90, 62, 54, 0.2)' },
+            yaxis: { title: 'Margine Operativo (%)', gridcolor: 'rgba(90, 62, 54, 0.1)', zerolinecolor: 'rgba(90, 62, 54, 0.2)' },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            margin: { t: 50, l: 50, r: 20, b: 50 },
+            hovermode: 'closest',
+            showlegend: false
+        };
+
+        Plotly.newPlot('plotlyScatter', plotlyData, plotlyLayout, {displayModeBar: false, responsive: true});
+
+    });
+</script>
+</body>
+</html>
