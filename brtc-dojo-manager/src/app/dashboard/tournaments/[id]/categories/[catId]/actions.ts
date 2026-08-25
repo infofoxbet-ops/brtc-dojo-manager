@@ -151,14 +151,22 @@ export async function generateBracketPreview(tournamentId: string, categoryId: s
   const supabase = await createClient()
   const { organizationId } = await getOrgId()
 
-  const { data: athletes } = await supabase
-    .from('athletes')
-    .select('*')
-    .eq('organization_id', organizationId)
-    .limit(10) 
+  const { data: participantsData, error: partError } = await supabase
+    .from('tournament_participants')
+    .select('athlete_id, athletes(*)')
+    .eq('category_id', categoryId)
 
-  if (!athletes || athletes.length === 0) {
-    throw new Error('Nessun atleta trovato')
+  if (partError) {
+    console.error('Error fetching participants:', partError)
+    throw new Error('Errore durante il caricamento degli iscritti')
+  }
+
+  const athletes = (participantsData || [])
+    .map((p: any) => p.athletes)
+    .filter(Boolean)
+
+  if (!athletes || athletes.length < 2) {
+    throw new Error('Servono almeno 2 atleti iscritti a questa categoria per generare il tabellone')
   }
 
   const numAthletes = athletes.length

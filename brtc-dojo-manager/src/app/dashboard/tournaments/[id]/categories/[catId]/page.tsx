@@ -91,50 +91,69 @@ export default async function CategoryDetailPage({
         <div className="md:col-span-2 space-y-4">
           <div className="rounded-xl border bg-card text-card-foreground shadow h-full flex flex-col">
             <div className="p-6 pb-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold leading-none tracking-tight">Tabellone (Eliminazione Diretta)</h3>
-              {participants.length >= 2 && (
-                <form action={generateBracketWithIds}>
-                  <button type="submit" className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3">
-                    <Play className="mr-2 h-3 w-3" /> Genera Incontri
+              <h3 className="font-semibold leading-none tracking-tight">Tabellone Torneo</h3>
+              {matches.length > 0 ? (
+                <Link href={`/dashboard/tournaments/${tournamentId}/categories/${categoryId}/bracket`}>
+                  <button className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90 h-8 px-3">
+                    <Trophy className="mr-2 h-3.5 w-3.5" /> Gestisci Tabellone & Arbitraggio
                   </button>
-                </form>
-              )}
+                </Link>
+              ) : participants.length >= 2 ? (
+                <Link href={`/dashboard/tournaments/${tournamentId}/categories/${categoryId}/generate`}>
+                  <button className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors bg-emerald-600 text-white shadow hover:bg-emerald-700 h-8 px-3">
+                    <Play className="mr-2 h-3.5 w-3.5" /> Genera Tabellone Incontri
+                  </button>
+                </Link>
+              ) : null}
             </div>
             
             <div className="p-6 flex-1 flex flex-col">
               {matches.length === 0 ? (
                 <div className="flex flex-1 items-center justify-center flex-col text-muted-foreground border-2 border-dashed rounded-lg p-12 text-center">
                   <Trophy className="h-10 w-10 mb-4 opacity-20" />
-                  <p>Il tabellone non è ancora stato generato.</p>
-                  <p className="text-xs mt-1">Aggiungi almeno 2 iscritti e clicca "Genera Incontri".</p>
+                  <p className="font-medium text-foreground">Il tabellone non è ancora stato generato.</p>
+                  {participants.length >= 2 ? (
+                    <div className="mt-4">
+                      <Link href={`/dashboard/tournaments/${tournamentId}/categories/${categoryId}/generate`}>
+                        <button className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4">
+                          <Play className="mr-2 h-4 w-4" /> Procedi alla Generazione con Sorteggio
+                        </button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className="text-xs mt-1">Aggiungi almeno 2 iscritti per abilitare la generazione automatica del tabellone.</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <h4 className="text-sm font-medium text-muted-foreground">Primo Turno</h4>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {matches.map((match: any, index: number) => (
-                      <div key={match.id} className="border rounded-lg overflow-hidden flex flex-col bg-muted/10 relative">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/20"></div>
-                        <div className="flex justify-between items-center p-3 border-b bg-background">
-                          <span className="text-sm font-medium truncate">
-                            {match.athlete_a ? `${match.athlete_a.last_name} ${match.athlete_a.first_name}` : <span className="text-muted-foreground italic">BYE (Passa turno)</span>}
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold">Stato Incontri</h4>
+                    <Link 
+                      href={`/dashboard/tournaments/${tournamentId}/categories/${categoryId}/bracket`}
+                      className="text-xs text-primary font-medium hover:underline flex items-center"
+                    >
+                      Apri Vista Completa ad Albero &rarr;
+                    </Link>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {matches.slice(0, 8).map((match: any) => (
+                      <div key={match.id} className="border rounded-lg p-3 bg-muted/10 text-xs flex flex-col gap-1.5">
+                        <div className="flex justify-between text-muted-foreground font-semibold">
+                          <span>Round {match.round_number} - Match {match.match_number}</span>
+                          {match.is_bye && <span className="text-amber-600 font-bold">BYE</span>}
+                        </div>
+                        <div className="flex justify-between items-center py-1 border-t">
+                          <span className={match.winner_id === match.athlete_a?.id ? "font-bold text-emerald-600" : ""}>
+                            {match.athlete_a ? `${match.athlete_a.last_name} ${match.athlete_a.first_name}` : <span className="italic text-muted-foreground">BYE</span>}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center p-3 bg-background">
-                          <span className="text-sm font-medium truncate">
-                            {match.athlete_b ? `${match.athlete_b.last_name} ${match.athlete_b.first_name}` : <span className="text-muted-foreground italic">BYE (Passa turno)</span>}
+                        <div className="flex justify-between items-center py-1 border-t">
+                          <span className={match.winner_id === match.athlete_b?.id ? "font-bold text-emerald-600" : ""}>
+                            {match.athlete_b ? `${match.athlete_b.last_name} ${match.athlete_b.first_name}` : <span className="italic text-muted-foreground">BYE</span>}
                           </span>
                         </div>
-                        {match.winner_id && (
-                          <div className="p-2 text-xs text-center bg-emerald-50 text-emerald-700 font-medium border-t">
-                            Vincitore: {match.athlete_a && match.winner_id === match.athlete_a.id ? match.athlete_a.last_name : match.athlete_b?.last_name}
-                          </div>
-                        )}
                       </div>
                     ))}
-                  </div>
-                  <div className="mt-6 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
-                    <strong>Nota MVP:</strong> Questo è il tabellone degli accoppiamenti del primo turno. Nei futuri aggiornamenti verrà mostrato l'albero visivo completo fino alla finale.
                   </div>
                 </div>
               )}
