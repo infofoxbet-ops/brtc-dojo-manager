@@ -50,11 +50,11 @@ CREATE TABLE tournament_matches (
   round_number INTEGER NOT NULL, -- 1 = Finale, 2 = Semifinale, 3 = Quarti, ecc.
   match_number INTEGER NOT NULL, -- Posizione nel turno
   next_match_id UUID REFERENCES tournament_matches(id), -- L'incontro in cui avanzerà il vincitore
-  athlete1_id UUID REFERENCES athletes(id) ON DELETE SET NULL, -- Può essere NULL (BYE)
-  athlete2_id UUID REFERENCES athletes(id) ON DELETE SET NULL, -- Può essere NULL (BYE)
+  athlete_a_id UUID REFERENCES athletes(id) ON DELETE SET NULL, -- Può essere NULL (BYE)
+  athlete_b_id UUID REFERENCES athletes(id) ON DELETE SET NULL, -- Può essere NULL (BYE)
   winner_id UUID REFERENCES athletes(id) ON DELETE SET NULL,
-  score1 TEXT,
-  score2 TEXT,
+  score_a TEXT,
+  score_b TEXT,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'completed')),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()

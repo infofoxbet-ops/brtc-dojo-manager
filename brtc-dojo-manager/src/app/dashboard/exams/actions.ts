@@ -3,20 +3,14 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-async function getAdminClientAndOrgId() {
+async function getOrgId() {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
   
   if (!session) throw new Error('Utente non autenticato')
 
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData } = await adminClient
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', session.user.id)
@@ -24,14 +18,15 @@ async function getAdminClientAndOrgId() {
 
   if (!roleData?.organization_id) throw new Error('Nessuna palestra associata')
 
-  return { adminClient, organizationId: roleData.organization_id }
+  return { organizationId: roleData.organization_id }
 }
 
 export async function getExamSessions() {
   try {
-    const { adminClient, organizationId } = await getAdminClientAndOrgId()
+    const { organizationId } = await getOrgId()
+    const supabase = await createClient()
 
-    const { data, error } = await adminClient
+    const { data, error } = await supabase
       .from('exam_sessions')
       .select('*')
       .eq('organization_id', organizationId)
@@ -47,9 +42,9 @@ export async function getExamSessions() {
 
 export async function getExamSessionById(id: string) {
   try {
-    const { adminClient } = await getAdminClientAndOrgId()
+    const supabase = await createClient()
 
-    const { data, error } = await adminClient
+    const { data, error } = await supabase
       .from('exam_sessions')
       .select('*')
       .eq('id', id)
@@ -65,9 +60,9 @@ export async function getExamSessionById(id: string) {
 
 export async function getExamCandidates(sessionId: string) {
   try {
-    const { adminClient } = await getAdminClientAndOrgId()
+    const supabase = await createClient()
 
-    const { data, error } = await adminClient
+    const { data, error } = await supabase
       .from('exam_candidates')
       .select('*, athletes(id, first_name, last_name, belt_category, medical_cert_expiry)')
       .eq('session_id', sessionId)
@@ -83,17 +78,16 @@ export async function getExamCandidates(sessionId: string) {
 
 export async function getEligibleAthletes(sessionId: string) {
   try {
-    const { adminClient, organizationId } = await getAdminClientAndOrgId()
+    const supabase = await createClient()
+    const { organizationId } = await getOrgId()
 
-    // 1. Prendi tutti gli atleti dell'organizzazione
-    const { data: allAthletes } = await adminClient
+    const { data: allAthletes } = await supabase
       .from('athletes')
       .select('id, first_name, last_name, belt_category, medical_cert_expiry')
       .eq('organization_id', organizationId)
       .eq('is_active', true)
 
-    // 2. Prendi gli atleti già candidati in questa sessione
-    const { data: currentCandidates } = await adminClient
+    const { data: currentCandidates } = await supabase
       .from('exam_candidates')
       .select('athlete_id')
       .eq('session_id', sessionId)
@@ -113,9 +107,10 @@ export async function createExamSession(formData: FormData) {
 
   if (!name || !date) throw new Error('Campi obbligatori mancanti')
 
-  const { adminClient, organizationId } = await getAdminClientAndOrgId()
+  const { organizationId } = await getOrgId()
+  const supabase = await createClient()
 
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('exam_sessions')
     .insert({
       organization_id: organizationId,
@@ -135,9 +130,9 @@ export async function createExamSession(formData: FormData) {
 export async function addCandidateToSession(sessionId: string, athleteId: string, targetBelt: string) {
   if (!sessionId || !athleteId || !targetBelt) throw new Error('Campi obbligatori mancanti')
 
-  const { adminClient } = await getAdminClientAndOrgId()
+  const supabase = await createClient()
 
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('exam_candidates')
     .insert({
       session_id: sessionId,
@@ -155,9 +150,9 @@ export async function addCandidateToSession(sessionId: string, athleteId: string
 }
 
 export async function removeCandidateFromSession(sessionId: string, candidateId: string) {
-  const { adminClient } = await getAdminClientAndOrgId()
+  const supabase = await createClient()
 
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('exam_candidates')
     .delete()
     .eq('id', candidateId)
@@ -176,9 +171,9 @@ export async function updateCandidateEvaluation(
   status: 'pending' | 'passed' | 'failed' | 'postponed',
   notes: string
 ) {
-  const { adminClient } = await getAdminClientAndOrgId()
+  const supabase = await createClient()
 
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('exam_candidates')
     .update({ status, notes })
     .eq('id', candidateId)
@@ -192,10 +187,9 @@ export async function updateCandidateEvaluation(
 }
 
 export async function finalizeExamSession(sessionId: string) {
-  const { adminClient } = await getAdminClientAndOrgId()
+  const supabase = await createClient()
 
-  // 1. Carica la sessione
-  const { data: session, error: sessionErr } = await adminClient
+  const { data: session, error: sessionErr } = await supabase
     .from('exam_sessions')
     .select('*')
     .eq('id', sessionId)
@@ -204,47 +198,19 @@ export async function finalizeExamSession(sessionId: string) {
   if (sessionErr || !session) throw new Error('Sessione non trovata')
   if (session.status === 'completed') throw new Error('Sessione già completata')
 
-  // 2. Carica i candidati
-  const { data: candidates, error: candErr } = await adminClient
-    .from('exam_candidates')
-    .select('*, athletes(id, belt_category)')
-    .eq('session_id', sessionId)
+  // Chiama la funzione RPC per eseguire l'operazione in modo atomico
+  const { data: rpcResult, error: rpcError } = await supabase.rpc('finalize_exam_session', {
+    p_session_id: sessionId,
+    p_session_date: session.date,
+    p_session_name: session.name
+  })
 
-  if (candErr || !candidates) throw new Error('Errore caricamento candidati')
-
-  // 3. Esegui promozioni
-  for (const candidate of candidates) {
-    if (candidate.status === 'passed') {
-      const oldBelt = candidate.athletes.belt_category
-      const newBelt = candidate.target_belt
-
-      // Aggiorna l'atleta
-      await adminClient
-        .from('athletes')
-        .update({ belt_category: newBelt })
-        .eq('id', candidate.athlete_id)
-
-      // Registra lo storico
-      await adminClient
-        .from('athlete_belt_history')
-        .insert({
-          athlete_id: candidate.athlete_id,
-          old_belt: oldBelt,
-          new_belt: newBelt,
-          promotion_date: session.date,
-          notes: candidate.notes || 'Promosso durante la sessione d\'esame: ' + session.name
-        })
-    }
+  if (rpcError) {
+    console.error('Error calling RPC finalize_exam_session:', rpcError)
+    throw new Error('Errore durante la finalizzazione della sessione: ' + rpcError.message)
   }
 
-  // 4. Marca la sessione come completata
-  const { error: finalizeErr } = await adminClient
-    .from('exam_sessions')
-    .update({ status: 'completed' })
-    .eq('id', sessionId)
-
-  if (finalizeErr) {
-    console.error('Error finalising session:', finalizeErr)
+  if (!rpcResult || !(rpcResult as any).success) {
     throw new Error('Errore durante la finalizzazione della sessione')
   }
 
@@ -253,11 +219,10 @@ export async function finalizeExamSession(sessionId: string) {
   revalidatePath('/dashboard/athletes')
 }
 
-// Keep older helper to maintain compatibility
 export async function updateAthleteBelt(athleteId: string, newBelt: string) {
-  const { adminClient } = await getAdminClientAndOrgId()
+  const supabase = await createClient()
 
-  const { data: athlete } = await adminClient
+  const { data: athlete } = await supabase
     .from('athletes')
     .select('belt_category')
     .eq('id', athleteId)
@@ -265,7 +230,7 @@ export async function updateAthleteBelt(athleteId: string, newBelt: string) {
 
   const oldBelt = athlete?.belt_category || null
 
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('athletes')
     .update({ belt_category: newBelt })
     .eq('id', athleteId)
@@ -275,8 +240,7 @@ export async function updateAthleteBelt(athleteId: string, newBelt: string) {
     throw new Error("Errore durante l'aggiornamento del grado")
   }
 
-  // Record history
-  await adminClient
+  await supabase
     .from('athlete_belt_history')
     .insert({
       athlete_id: athleteId,

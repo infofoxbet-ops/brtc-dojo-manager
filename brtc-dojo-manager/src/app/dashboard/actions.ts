@@ -1,7 +1,7 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export async function getDashboardStats() {
   const supabase = await createClient()
@@ -11,13 +11,8 @@ export async function getDashboardStats() {
     throw new Error('Utente non autenticato')
   }
 
-  // Bypassiamo RLS per leggere i dati garantendo il successo tramite service role key
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData } = await adminClient
+  // Usa il client autenticato con RLS
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', session.user.id)
@@ -34,8 +29,8 @@ export async function getDashboardStats() {
     }
   }
 
-  // Ottieni tutti gli atleti dell'organizzazione
-  const { data: athletes, error } = await adminClient
+  // Ottieni tutti gli atleti dell'organizzazione (RLS filtra automaticamente)
+  const { data: athletes, error } = await supabase
     .from('athletes')
     .select('*')
     .eq('organization_id', orgId)
@@ -56,7 +51,7 @@ export async function getDashboardStats() {
 
   // Filtriamo atleti per stato del certificato
   const expired = athletes.filter(a => {
-    if (!a.medical_cert_expiry) return true // Se non ce l'ha, consideralo scaduto per sicurezza
+    if (!a.medical_cert_expiry) return true
     const expiry = new Date(a.medical_cert_expiry)
     return expiry < today
   }).sort((a, b) => {
@@ -72,7 +67,6 @@ export async function getDashboardStats() {
   }).sort((a, b) => new Date(a.medical_cert_expiry!).getTime() - new Date(b.medical_cert_expiry!).getTime())
 
   const totalAthletes = athletes.length
-  // Gli atleti attivi sono quelli che non hanno il certificato scaduto (nella nostra logica base)
   const activeAthletes = totalAthletes - expired.length
 
   return {

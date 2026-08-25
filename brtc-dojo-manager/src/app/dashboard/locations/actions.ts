@@ -3,19 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export async function getLocations() {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return []
 
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData } = await adminClient
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', session.user.id)
@@ -23,7 +17,8 @@ export async function getLocations() {
 
   if (!roleData?.organization_id) return []
 
-  const { data, error } = await adminClient
+  // RLS filtra automaticamente per organization_id
+  const { data, error } = await supabase
     .from('locations')
     .select('*')
     .eq('organization_id', roleData.organization_id)
@@ -45,12 +40,7 @@ export async function createLocation(formData: FormData) {
     throw new Error('Utente non autenticato')
   }
 
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData } = await adminClient
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', session.user.id)
@@ -73,7 +63,7 @@ export async function createLocation(formData: FormData) {
     organization_id: organizationId,
   }
 
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('locations')
     .insert(locationData)
 
@@ -92,12 +82,7 @@ export async function deleteLocation(id: string) {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('Utente non autenticato')
 
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('locations')
     .delete()
     .eq('id', id)

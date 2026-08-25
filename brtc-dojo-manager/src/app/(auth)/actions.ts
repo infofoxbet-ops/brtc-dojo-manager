@@ -4,11 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-
 export async function login(formData: FormData) {
   const supabase = await createClient()
-
+  
   const data = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
@@ -20,20 +18,15 @@ export async function login(formData: FormData) {
     redirect('/login?message=Credenziali non valide')
   }
 
-  // Ensure organization exists for this user
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData } = await adminClient
+  // Usa il client autenticato per verificare/creare organizzazione
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', authData.user.id)
     .single()
 
   if (!roleData?.organization_id) {
-    const { data: orgData } = await adminClient
+    const { data: orgData } = await supabase
       .from('organizations')
       .insert({
         name: 'Dojo Karate Pro',
@@ -43,7 +36,7 @@ export async function login(formData: FormData) {
       .single()
 
     if (orgData) {
-      await adminClient.from('user_roles').insert({
+      await supabase.from('user_roles').insert({
         user_id: authData.user.id,
         role: 'super-admin',
         organization_id: orgData.id
@@ -71,13 +64,8 @@ export async function signup(formData: FormData) {
     redirect('/register?message=' + encodeURIComponent(error?.message || 'Errore durante la registrazione'))
   }
 
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  // Crea organizzazione default
-  const { data: orgData } = await adminClient
+  // Crea organizzazione default usando il client autenticato
+  const { data: orgData } = await supabase
     .from('organizations')
     .insert({
       name: 'Dojo Karate Pro',
@@ -87,7 +75,7 @@ export async function signup(formData: FormData) {
     .single()
 
   if (orgData) {
-    await adminClient.from('user_roles').insert({
+    await supabase.from('user_roles').insert({
       user_id: authData.user.id,
       role: 'super-admin',
       organization_id: orgData.id
@@ -97,4 +85,3 @@ export async function signup(formData: FormData) {
   revalidatePath('/', 'layout')
   redirect('/dashboard')
 }
-

@@ -101,3 +101,78 @@ USING (
     AND a.parent_user_id = (SELECT auth.uid())
   )
 );
+
+
+-- ============================================
+-- RPC FUNCTION: Finalizza Sessione d'Esame
+-- ============================================
+-- Esegue in modo atomico:
+-- 1. Aggiorna il grado degli atleti che hanno superato l'esame
+-- 2. Inserisce lo storico delle cinture
+-- 3. Imposta lo stato della sessione a 'completed'
+
+CREATE OR REPLACE FUNCTION finalize_exam_session(
+  p_session_id UUID,
+  p_session_date DATE,
+  p_session_name TEXT
+)
+RETURNS JSON AS $$
+DECLARE
+  v_candidate RECORD;
+  v_old_belt TEXT;
+  v_new_belt TEXT;
+  v_result JSON;
+  v_updated_count INTEGER := 0;
+BEGIN
+  -- Itera sui candidati passati
+  FOR v_candidate IN
+    SELECT ec.id, ec.athlete_id, ec.target_belt, ec.notes, a.belt_category
+    FROM exam_candidates ec
+    JOIN athletes a ON a.id = ec.athlete_id
+    WHERE ec.session_id = p_session_id
+    AND ec.status = 'passed'
+  LOOP
+    v_old_belt := v_candidate.belt_category;
+    v_new_belt := v_candidate.target_belt;
+
+    -- Aggiorna il grado dell'atleta
+    UPDATE athletes
+    SET belt_category = v_new_belt
+    WHERE id = v_candidate.athlete_id;
+
+    -- Inserisce lo storico
+    INSERT INTO athlete_belt_history (
+      athlete_id,
+      old_belt,
+      new_belt,
+      promotion_date,
+      notes
+    ) VALUES (
+      v_candidate.athlete_id,
+      v_old_belt,
+      v_new_belt,
+      p_session_date,
+      COALESCE(v_candidate.notes, '') || ' - Promosso durante la sessione: ' || p_session_name
+    );
+
+    v_updated_count := v_updated_count + 1;
+  END LOOP;
+
+  -- Imposta la sessione come completata
+  UPDATE exam_sessions
+  SET status = 'completed'
+  WHERE id = p_session_id;
+
+  -- Ritorna il risultato
+  SELECT json_build_object(
+    'success', true,
+    'updated_athletes', v_updated_count,
+    'message', 'Sessione finalizzata con successo'
+  ) INTO v_result;
+
+  RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Concedi i permessi di esecuzione agli utenti autenticati
+GRANT EXECUTE ON FUNCTION finalize_exam_session TO authenticated;

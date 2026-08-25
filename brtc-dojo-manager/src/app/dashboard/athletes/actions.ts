@@ -3,19 +3,14 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export async function getAthletes() {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return []
 
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData } = await adminClient
+  // Ottieni l'organizzazione dell'utente
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', session.user.id)
@@ -23,7 +18,8 @@ export async function getAthletes() {
 
   if (!roleData?.organization_id) return []
 
-  const { data, error } = await adminClient
+  // RLS filtra automaticamente per organization_id
+  const { data, error } = await supabase
     .from('athletes')
     .select('*')
     .eq('organization_id', roleData.organization_id)
@@ -40,19 +36,12 @@ export async function getAthletes() {
 export async function createAthlete(formData: FormData) {
   const supabase = await createClient()
 
-  // Ottieni l'id dell'organizzazione dell'utente loggato
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) {
     throw new Error('Utente non autenticato')
   }
 
-  // Usiamo il service role per bypassare i problemi del token JWT (RLS) e leggere dal database
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData, error: roleError } = await adminClient
+  const { data: roleData, error: roleError } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', session.user.id)
@@ -78,7 +67,7 @@ export async function createAthlete(formData: FormData) {
     organization_id: organizationId,
   }
 
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('athletes')
     .insert(athleteData)
 

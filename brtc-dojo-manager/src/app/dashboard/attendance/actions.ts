@@ -2,19 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export async function getAttendancesByDate(date: string) {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return []
 
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData } = await adminClient
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', session.user.id)
@@ -22,7 +16,8 @@ export async function getAttendancesByDate(date: string) {
 
   if (!roleData?.organization_id) return []
 
-  const { data, error } = await adminClient
+  // RLS filtra automaticamente per organization_id
+  const { data, error } = await supabase
     .from('attendance')
     .select('*')
     .eq('organization_id', roleData.organization_id)
@@ -42,12 +37,7 @@ export async function upsertAttendance(athleteId: string, date: string, status: 
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('Non autenticato')
 
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData } = await adminClient
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', session.user.id)
@@ -55,7 +45,7 @@ export async function upsertAttendance(athleteId: string, date: string, status: 
 
   if (!roleData?.organization_id) throw new Error('Organizzazione non trovata')
 
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('attendance')
     .upsert({
       athlete_id: athleteId,

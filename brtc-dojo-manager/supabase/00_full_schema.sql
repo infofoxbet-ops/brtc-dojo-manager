@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS organizations (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS locations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS locations (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_locations_org ON locations(organization_id);
+ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
 
 -- 2. RUOLI UTENTE & ORGANIZZAZIONE
 CREATE TABLE IF NOT EXISTS user_roles (
@@ -57,6 +59,28 @@ STABLE
 AS $$
   SELECT ((SELECT auth.jwt()) ->> 'organization_id')::UUID
 $$;
+
+-- Policy RLS per organizations: gli utenti vedono solo la propria organizzazione
+CREATE POLICY "Utenti possono vedere la propria organizzazione"
+ON organizations FOR SELECT
+USING (id = public.get_user_org_id());
+
+-- Policy RLS per locations: gli utenti vedono solo le sedi della propria organizzazione
+CREATE POLICY "Utenti possono vedere le sedi della propria organizzazione"
+ON locations FOR SELECT
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono inserire sedi nella propria organizzazione"
+ON locations FOR INSERT
+WITH CHECK (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono aggiornare sedi nella propria organizzazione"
+ON locations FOR UPDATE
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono eliminare sedi nella propria organizzazione"
+ON locations FOR DELETE
+USING (organization_id = public.get_user_org_id());
 
 -- 3. ANAGRAFICA ATLETI
 CREATE TABLE IF NOT EXISTS athletes (
@@ -201,3 +225,158 @@ CREATE TABLE IF NOT EXISTS athlete_belt_history (
 );
 CREATE INDEX IF NOT EXISTS idx_belt_history_athlete ON athlete_belt_history(athlete_id);
 ALTER TABLE athlete_belt_history ENABLE ROW LEVEL SECURITY;
+
+-- ==============================================================================
+-- POLICY RLS PER TUTTE LE TABELLE - ISOLAMENTO DATI PER ORGANIZATION_ID
+-- ==============================================================================
+
+-- Policy per athletes
+CREATE POLICY "Utenti possono vedere atleti della propria organizzazione"
+ON athletes FOR SELECT
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono inserire atleti nella propria organizzazione"
+ON athletes FOR INSERT
+WITH CHECK (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono aggiornare atleti nella propria organizzazione"
+ON athletes FOR UPDATE
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono eliminare atleti nella propria organizzazione"
+ON athletes FOR DELETE
+USING (organization_id = public.get_user_org_id());
+
+-- Policy per attendance
+CREATE POLICY "Utenti possono vedere presenze della propria organizzazione"
+ON attendance FOR SELECT
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono inserire presenze nella propria organizzazione"
+ON attendance FOR INSERT
+WITH CHECK (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono aggiornare presenze nella propria organizzazione"
+ON attendance FOR UPDATE
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono eliminare presenze nella propria organizzazione"
+ON attendance FOR DELETE
+USING (organization_id = public.get_user_org_id());
+
+-- Policy per tournaments
+CREATE POLICY "Utenti possono vedere tornei della propria organizzazione"
+ON tournaments FOR SELECT
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono inserire tornei nella propria organizzazione"
+ON tournaments FOR INSERT
+WITH CHECK (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono aggiornare tornei nella propria organizzazione"
+ON tournaments FOR UPDATE
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono eliminare tornei nella propria organizzazione"
+ON tournaments FOR DELETE
+USING (organization_id = public.get_user_org_id());
+
+-- Policy per tournament_categories
+CREATE POLICY "Utenti possono vedere categorie della propria organizzazione"
+ON tournament_categories FOR SELECT
+USING (tournament_id IN (SELECT id FROM tournaments WHERE organization_id = public.get_user_org_id()));
+
+CREATE POLICY "Utenti possono inserire categorie nella propria organizzazione"
+ON tournament_categories FOR INSERT
+WITH CHECK (tournament_id IN (SELECT id FROM tournaments WHERE organization_id = public.get_user_org_id()));
+
+CREATE POLICY "Utenti possono aggiornare categorie nella propria organizzazione"
+ON tournament_categories FOR UPDATE
+USING (tournament_id IN (SELECT id FROM tournaments WHERE organization_id = public.get_user_org_id()));
+
+CREATE POLICY "Utenti possono eliminare categorie nella propria organizzazione"
+ON tournament_categories FOR DELETE
+USING (tournament_id IN (SELECT id FROM tournaments WHERE organization_id = public.get_user_org_id()));
+
+-- Policy per tournament_participants
+CREATE POLICY "Utenti possono vedere partecipanti della propria organizzazione"
+ON tournament_participants FOR SELECT
+USING (tournament_id IN (SELECT id FROM tournaments WHERE organization_id = public.get_user_org_id()));
+
+CREATE POLICY "Utenti possono inserire partecipanti nella propria organizzazione"
+ON tournament_participants FOR INSERT
+WITH CHECK (tournament_id IN (SELECT id FROM tournaments WHERE organization_id = public.get_user_org_id()));
+
+CREATE POLICY "Utenti possono eliminare partecipanti nella propria organizzazione"
+ON tournament_participants FOR DELETE
+USING (tournament_id IN (SELECT id FROM tournaments WHERE organization_id = public.get_user_org_id()));
+
+-- Policy per tournament_matches
+CREATE POLICY "Utenti possono vedere incontri della propria organizzazione"
+ON tournament_matches FOR SELECT
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono inserire incontri nella propria organizzazione"
+ON tournament_matches FOR INSERT
+WITH CHECK (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono aggiornare incontri nella propria organizzazione"
+ON tournament_matches FOR UPDATE
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono eliminare incontri nella propria organizzazione"
+ON tournament_matches FOR DELETE
+USING (organization_id = public.get_user_org_id());
+
+-- Policy per exam_sessions
+CREATE POLICY "Utenti possono vedere sessioni esami della propria organizzazione"
+ON exam_sessions FOR SELECT
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono inserire sessioni esami nella propria organizzazione"
+ON exam_sessions FOR INSERT
+WITH CHECK (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono aggiornare sessioni esami nella propria organizzazione"
+ON exam_sessions FOR UPDATE
+USING (organization_id = public.get_user_org_id());
+
+CREATE POLICY "Utenti possono eliminare sessioni esami nella propria organizzazione"
+ON exam_sessions FOR DELETE
+USING (organization_id = public.get_user_org_id());
+
+-- Policy per exam_candidates
+CREATE POLICY "Utenti possono vedere candidati della propria organizzazione"
+ON exam_candidates FOR SELECT
+USING (session_id IN (SELECT id FROM exam_sessions WHERE organization_id = public.get_user_org_id()));
+
+CREATE POLICY "Utenti possono inserire candidati nella propria organizzazione"
+ON exam_candidates FOR INSERT
+WITH CHECK (session_id IN (SELECT id FROM exam_sessions WHERE organization_id = public.get_user_org_id()));
+
+CREATE POLICY "Utenti possono aggiornare candidati nella propria organizzazione"
+ON exam_candidates FOR UPDATE
+USING (session_id IN (SELECT id FROM exam_sessions WHERE organization_id = public.get_user_org_id()));
+
+CREATE POLICY "Utenti possono eliminare candidati nella propria organizzazione"
+ON exam_candidates FOR DELETE
+USING (session_id IN (SELECT id FROM exam_sessions WHERE organization_id = public.get_user_org_id()));
+
+-- Policy per athlete_belt_history
+CREATE POLICY "Utenti possono vedere storico cinture della propria organizzazione"
+ON athlete_belt_history FOR SELECT
+USING (athlete_id IN (SELECT id FROM athletes WHERE organization_id = public.get_user_org_id()));
+
+CREATE POLICY "Utenti possono inserire storico cinture nella propria organizzazione"
+ON athlete_belt_history FOR INSERT
+WITH CHECK (athlete_id IN (SELECT id FROM athletes WHERE organization_id = public.get_user_org_id()));
+
+-- Policy per user_roles
+CREATE POLICY "Utenti possono vedere il proprio ruolo"
+ON user_roles FOR SELECT
+USING (user_id = auth.uid());
+
+CREATE POLICY "Utenti possono inserire il proprio ruolo"
+ON user_roles FOR INSERT
+WITH CHECK (user_id = auth.uid());
+

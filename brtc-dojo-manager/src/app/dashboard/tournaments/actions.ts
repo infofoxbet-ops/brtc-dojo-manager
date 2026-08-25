@@ -3,9 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-async function getAdminClientAndOrgId() {
+async function getOrgId() {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
   
@@ -13,12 +12,7 @@ async function getAdminClientAndOrgId() {
     throw new Error('Utente non autenticato')
   }
 
-  const adminClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data: roleData } = await adminClient
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('organization_id')
     .eq('user_id', session.user.id)
@@ -30,18 +24,19 @@ async function getAdminClientAndOrgId() {
     throw new Error('Nessuna palestra associata')
   }
 
-  return { adminClient, organizationId }
+  return { organizationId }
 }
 
 export async function getTournaments() {
   try {
-    const { adminClient, organizationId } = await getAdminClientAndOrgId()
+    const { organizationId } = await getOrgId()
 
-    const { data, error } = await adminClient
-      .from('tournaments')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .order('date', { ascending: false })
+    const { data, error } = await createClient().then(s => 
+      s.from('tournaments')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('date', { ascending: false })
+    )
 
     if (error) {
       console.error('Error fetching tournaments:', error)
@@ -57,9 +52,10 @@ export async function getTournaments() {
 
 export async function getTournamentById(id: string) {
   try {
-    const { adminClient, organizationId } = await getAdminClientAndOrgId()
+    const { organizationId } = await getOrgId()
+    const supabase = await createClient()
 
-    const { data, error } = await adminClient
+    const { data, error } = await supabase
       .from('tournaments')
       .select('*, tournament_categories(*)')
       .eq('id', id)
@@ -79,7 +75,8 @@ export async function getTournamentById(id: string) {
 }
 
 export async function createTournament(formData: FormData) {
-  const { adminClient, organizationId } = await getAdminClientAndOrgId()
+  const { organizationId } = await getOrgId()
+  const supabase = await createClient()
   
   const name = formData.get('name') as string
   const date = formData.get('date') as string
@@ -90,7 +87,7 @@ export async function createTournament(formData: FormData) {
     redirect('/dashboard/tournaments/new?error=Nome e data sono obbligatori')
   }
 
-  const { data, error } = await adminClient
+  const { data, error } = await supabase
     .from('tournaments')
     .insert({
       organization_id: organizationId,
@@ -113,7 +110,7 @@ export async function createTournament(formData: FormData) {
 }
 
 export async function createCategory(tournamentId: string, formData: FormData) {
-  const { adminClient } = await getAdminClientAndOrgId()
+  const supabase = await createClient()
   
   const name = formData.get('name') as string
   const type = formData.get('type') as string
@@ -125,7 +122,7 @@ export async function createCategory(tournamentId: string, formData: FormData) {
     redirect(`/dashboard/tournaments/${tournamentId}?error=Nome e tipo sono obbligatori`)
   }
 
-  const { error } = await adminClient
+  const { error } = await supabase
     .from('tournament_categories')
     .insert({
       tournament_id: tournamentId,

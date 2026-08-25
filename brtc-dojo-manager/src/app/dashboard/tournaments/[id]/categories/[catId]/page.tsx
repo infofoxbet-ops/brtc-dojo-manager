@@ -1,6 +1,6 @@
 import { ArrowLeft, Users, Trophy, Play } from "lucide-react"
 import Link from "next/link"
-import { getCategoryDetails, getAvailableAthletes, addParticipant, generateBracketAction } from "../../../bracket-actions"
+import { getCategoryDetails, getAvailableAthletes, addParticipant, generateBracketAction } from "./actions"
 import { notFound } from "next/navigation"
 
 export default async function CategoryDetailPage({
@@ -117,17 +117,17 @@ export default async function CategoryDetailPage({
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/20"></div>
                         <div className="flex justify-between items-center p-3 border-b bg-background">
                           <span className="text-sm font-medium truncate">
-                            {match.athlete1 ? `${match.athlete1.last_name} ${match.athlete1.first_name}` : <span className="text-muted-foreground italic">BYE (Passa turno)</span>}
+                            {match.athlete_a ? `${match.athlete_a.last_name} ${match.athlete_a.first_name}` : <span className="text-muted-foreground italic">BYE (Passa turno)</span>}
                           </span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-background">
                           <span className="text-sm font-medium truncate">
-                            {match.athlete2 ? `${match.athlete2.last_name} ${match.athlete2.first_name}` : <span className="text-muted-foreground italic">BYE (Passa turno)</span>}
+                            {match.athlete_b ? `${match.athlete_b.last_name} ${match.athlete_b.first_name}` : <span className="text-muted-foreground italic">BYE (Passa turno)</span>}
                           </span>
                         </div>
                         {match.winner_id && (
                           <div className="p-2 text-xs text-center bg-emerald-50 text-emerald-700 font-medium border-t">
-                            Vincitore: {match.athlete1 && match.winner_id === match.athlete1_id ? match.athlete1.last_name : match.athlete2?.last_name}
+                            Vincitore: {match.athlete_a && match.winner_id === match.athlete_a.id ? match.athlete_a.last_name : match.athlete_b?.last_name}
                           </div>
                         )}
                       </div>
