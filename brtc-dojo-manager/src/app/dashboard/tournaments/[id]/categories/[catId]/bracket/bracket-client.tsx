@@ -47,8 +47,9 @@ export function BracketClient({ match, athletes, categoryType = 'kumite' }: { ma
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <div 
-            className={`border rounded-lg p-3 flex flex-col gap-2 relative ${hasAthletes && !isCompleted ? 'cursor-pointer hover:border-blue-500 shadow-sm' : 'opacity-70'} ${isCompleted ? 'bg-slate-50' : 'bg-white'}`}
+          <button 
+            type="button"
+            className={`w-full text-left border rounded-lg p-3 flex flex-col gap-2 relative ${hasAthletes && !isCompleted ? 'cursor-pointer hover:border-blue-500 shadow-sm' : 'opacity-70'} ${isCompleted ? 'bg-slate-50' : 'bg-white'}`}
           />
         }
         onClick={(e) => {

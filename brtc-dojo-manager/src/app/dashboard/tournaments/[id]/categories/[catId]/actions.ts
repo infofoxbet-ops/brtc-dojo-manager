@@ -426,43 +426,48 @@ async function resetDescendants(supabase: any, matchId: string, oldAthleteId: st
   }
 }
 
-export async function declareWinner(matchId: string, winnerId: string | null, scoreA?: number | null, scoreB?: number | null) {
+export async function declareWinner(matchId: string, winnerId: string, scoreA?: number | null, scoreB?: number | null) {
   const supabase = await createClient()
 
-  const { data: match } = await supabase
+  const { data: match, error: matchError } = await supabase
     .from('tournament_matches')
-    .select('*, tournament_matches(*)')
+    .select('*')
     .eq('id', matchId)
     .single()
 
-  if (!match) throw new Error('Incontro non trovato')
+  if (matchError || !match) {
+    console.error('Match not found error:', matchError)
+    throw new Error('Incontro non trovato')
+  }
 
-  const updates: any = { winner_id: winnerId }
-  if (scoreA !== undefined) updates.score_a = scoreA === null ? null : scoreA
-  if (scoreB !== undefined) updates.score_b = scoreB === null ? null : scoreB
+  // Se il vincitore cambia, resetta i discendenti ricorsivamente
+  if (match.winner_id && match.winner_id !== winnerId && match.next_match_id) {
+    await resetDescendants(supabase, match.next_match_id, match.winner_id)
+  }
+
+  const updates: any = { 
+    winner_id: winnerId,
+    score_a: scoreA === undefined ? null : scoreA,
+    score_b: scoreB === undefined ? null : scoreB
+  }
 
   await supabase.from('tournament_matches').update(updates).eq('id', matchId)
 
+  // Avanza il vincitore al turno successivo nello slot appropriato
   if (match.next_match_id) {
-    const { data: nextMatch } = await supabase
-      .from('tournament_matches')
-      .select('athlete_a_id, athlete_b_id')
-      .eq('id', match.next_match_id)
-      .single()
-
-    if (nextMatch) {
-      const updateNext: any = {}
-      if (!nextMatch.athlete_a_id) {
-        updateNext.athlete_a_id = winnerId
-      } else if (!nextMatch.athlete_b_id) {
-        updateNext.athlete_b_id = winnerId
-      }
-
-      if (Object.keys(updateNext).length > 0) {
-        await supabase.from('tournament_matches').update(updateNext).eq('id', match.next_match_id)
-      }
+    const updateNext: any = {}
+    // Match dispari alimenta Slot A, Match pari alimenta Slot B
+    if (match.match_number % 2 === 1) {
+      updateNext.athlete_a_id = winnerId
+    } else {
+      updateNext.athlete_b_id = winnerId
     }
+
+    await supabase
+      .from('tournament_matches')
+      .update(updateNext)
+      .eq('id', match.next_match_id)
   }
 
-  revalidatePath(`/dashboard/tournaments/${match.tournament_id}/categories/${match.category_id}`)
+  revalidatePath(`/dashboard/tournaments/${match.tournament_id}/categories/${match.category_id}/bracket`)
 }
