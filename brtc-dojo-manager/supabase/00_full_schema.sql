@@ -43,21 +43,25 @@ CREATE TABLE IF NOT EXISTS user_roles (
 );
 ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
 
--- Helper functions per RLS
+-- Helper functions per RLS (leggono da user_roles)
 CREATE OR REPLACE FUNCTION public.get_user_role()
 RETURNS TEXT
 LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
 STABLE
 AS $$
-  SELECT (SELECT auth.jwt()) ->> 'user_role'
+  SELECT role FROM public.user_roles WHERE user_id = auth.uid() LIMIT 1;
 $$;
 
 CREATE OR REPLACE FUNCTION public.get_user_org_id()
 RETURNS UUID
 LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
 STABLE
 AS $$
-  SELECT ((SELECT auth.jwt()) ->> 'organization_id')::UUID
+  SELECT organization_id FROM public.user_roles WHERE user_id = auth.uid() LIMIT 1;
 $$;
 
 -- Policy RLS per organizations: gli utenti vedono solo la propria organizzazione
